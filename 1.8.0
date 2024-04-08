@@ -1,0 +1,5 @@
+Collecting pymannkendall
+  Downloading pymannkendall-1.4.3-py3-none-any.whl.metadata (14 kB)
+Collecting category_encoders
+  Downloading category_encoders-2.6.3-py2.py3-none-any.whl.metadata (8.0 kB)
+Requirement already satisfied: pmdarima in c:\users\olarinoyem\appdata\local\miniconda3\envs\pyt_env\lib\site-packages (2.0.4)

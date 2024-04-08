@@ -2,13 +2,15 @@ import json
 import os
 from pathlib import Path
 import zipfile
+
 # from logger_api import get_logger
 import logging
+
 logger = logging.getLogger(__name__)
 # logger = get_logger(__name__)
 
-DATA_PATH = Path("data")
-KAGGLE_JSON = Path("api_keys/kaggle.json")
+DATA_PATH = Path("../data")
+KAGGLE_JSON = Path("../api_keys/kaggle.json")
 IS_KAGGLE_KEY = KAGGLE_JSON.exists()
 KAGGLE_API = None
 
@@ -140,7 +142,9 @@ def download_kaggle_dataset(
         if competition:
             _download_competition_dataset(api, dataset_details)
             logger.info("Donwload completed. Unzipping..")
-            _unzip(dataset_details["path"], dataset_details["filename"], delete_zip=True)
+            _unzip(
+                dataset_details["path"], dataset_details["filename"], delete_zip=True
+            )
         else:
             _download_dataset(api, dataset_details)
     else:
@@ -155,26 +159,32 @@ def _download(url, filename):
     import shutil
     import requests
     from tqdm.auto import tqdm
-    
+
     r = requests.get(url, stream=True, allow_redirects=True)
     if r.status_code != 200:
         r.raise_for_status()  # Will only raise for 4xx codes, so...
         raise RuntimeError(f"Request to {url} returned status code {r.status_code}")
-    file_size = int(r.headers.get('Content-Length', 0))
+    file_size = int(r.headers.get("Content-Length", 0))
 
     path = pathlib.Path(filename).expanduser().resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
 
     desc = "(Unknown total file size)" if file_size == 0 else ""
-    r.raw.read = functools.partial(r.raw.read, decode_content=True)  # Decompress if needed
+    r.raw.read = functools.partial(
+        r.raw.read, decode_content=True
+    )  # Decompress if needed
     with tqdm.wrapattr(r.raw, "read", total=file_size, desc=desc) as r_raw:
         with path.open("wb") as f:
             shutil.copyfileobj(r_raw, f)
 
     return path
 
+
 def download_monash_dataset(dataset_details):
-    _download(dataset_details["url"],DATA_PATH/dataset_details["path"]/dataset_details["filename"])
+    _download(
+        dataset_details["url"],
+        DATA_PATH / dataset_details["path"] / dataset_details["filename"],
+    )
     _unzip(dataset_details["path"], dataset_details["filename"], delete_zip=True)
 
 
@@ -189,45 +199,54 @@ def download_bixi_bike(username=None, key=None):
     dataset_details = DATASETS["Montreal Bixi Bike Data"]
     download_kaggle_dataset(dataset_details, username, key, competition=False)
 
+
 def download_london_smart_meters(username=None, key=None):
     logger.info("Downloading London Smart Meters Dataset...")
     dataset_details = DATASETS["London Smart Meters"]
     download_kaggle_dataset(dataset_details, username, key, competition=False)
+
 
 def download_sunspot():
     logger.info("Downloading Sunspot Dataset...")
     dataset_details = DATASETS["Sunspot"]
     download_monash_dataset(dataset_details)
 
+
 def download_electricity_demand():
     logger.info("Downloading Electricity Demand Dataset...")
     dataset_details = DATASETS["Electricity Demand"]
     download_monash_dataset(dataset_details)
+
 
 def download_dominick_sales():
     logger.info("Downloading Dominick Sales Dataset...")
     dataset_details = DATASETS["Dominick Sales"]
     download_monash_dataset(dataset_details)
 
+
 def download_turkish_sales_data(username=None, key=None):
     logger.info("Downloading Turkish Sales Dataset...")
     dataset_details = DATASETS["Turkish Retail Sales"]
     download_kaggle_dataset(dataset_details, username, key, competition=False)
-    
+
+
 def download_london_smart_meters(username=None, key=None):
     logger.info("Downloading London Smart Meters Dataset...")
     dataset_details = DATASETS["London Smart Meters"]
     download_kaggle_dataset(dataset_details, username, key, competition=False)
-    #Supplementary cleanup
+    # Supplementary cleanup
     # os.remove(DATA_PATH/dataset_details['path']/"hhblock_dataset.zip")
     # os.remove(DATA_PATH/dataset_details['path']/"halfhourly_dataset.zip")
     # os.remove(DATA_PATH/dataset_details['path']/"daily_dataset.zip")
     # os.remove(DATA_PATH/dataset_details['path']/"daily_dataset.csv.gz")
 
+
 def download_tourism():
     logger.info("Downloading Tourism Dataset...")
     dataset_details = DATASETS["Tourism"]
     download_monash_dataset(dataset_details)
+
+
 # download_1c_sales()
 # download_bixi_bike()
 # download_sunspot()
