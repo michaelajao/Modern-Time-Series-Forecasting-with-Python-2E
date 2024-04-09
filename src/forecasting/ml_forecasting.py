@@ -139,32 +139,28 @@ class FeatureConfig:
         if self.original_target is None:
             self.original_target = self.target
 
-    def get_X_y(
-        self, df: pd.DataFrame, categorical: bool = False, exogenous: bool = False
-    ):
+    def get_X_y(self, df: pd.DataFrame, categorical: bool = False, exogenous: bool = False):
         feature_list = copy.deepcopy(self.continuous_features)
         if categorical:
             feature_list += self.categorical_features + self.boolean_features
         if not exogenous:
             feature_list = list(set(feature_list) - set(self.exogenous_features))
         feature_list = list(set(feature_list))
-        delete_index_cols = list(set(self.index_cols) - set(self.feature_list))
-        (X, y, y_orig) = (
-            df.loc[:, set(feature_list + self.index_cols)]
+        delete_index_cols = list(set(self.index_cols) - set(feature_list))
+        
+        X, y, y_orig = (
+            df.loc[:, list(set(feature_list + self.index_cols))]
             .set_index(self.index_cols, drop=False)
             .drop(columns=delete_index_cols),
-            df.loc[:, [self.target] + self.index_cols].set_index(
-                self.index_cols, drop=True
-            )
+            df.loc[:, [self.target] + self.index_cols].set_index(self.index_cols, drop=True)
             if self.target in df.columns
             else None,
-            df.loc[:, [self.original_target] + self.index_cols].set_index(
-                self.index_cols, drop=True
-            )
+            df.loc[:, [self.original_target] + self.index_cols].set_index(self.index_cols, drop=True)
             if self.original_target in df.columns
             else None,
         )
         return X, y, y_orig
+
 
 
 @dataclass
@@ -282,18 +278,28 @@ class MLForecast:
             assert (
                 len(missing_cat_cols) == 0
             ), f"These categorical features are not handled by the categorical_encoder : {missing_cat_cols}"
-            # In later versions of sklearn get_feature_names have been deprecated
+
+            # Fit the encoder and transform the data
+            X_encoded = self._cat_encoder.fit_transform(X, y)
+
+            # Now that the encoder is fitted, it's safe to access the feature names
             try:
-                feature_names = self.model_config.categorical_encoder.get_feature_names()
+                feature_names = self._cat_encoder.get_feature_names_out()
             except AttributeError:
-                # in favour of get_feature_names_out()
-                feature_names = self.model_config.categorical_encoder.get_feature_names_out()
-            X = self._cat_encoder.fit_transform(X, y)
+                # Fallback for older versions or encoders without `get_feature_names_out`
+                try:
+                    feature_names = self._cat_encoder.get_feature_names()
+                except AttributeError:
+                    # If neither method is available, raise an error or handle it appropriately
+                    raise NotImplementedError("The encoder does not support getting feature names.")
+
+            # Update X with the encoded data
+            X = X_encoded
             self._encoded_categorical_features = difference_list(
                 feature_names,
-                self.feature_config.continuous_features
-                + self.feature_config.boolean_features,
+                self.feature_config.continuous_features + self.feature_config.boolean_features,
             )
+
         else:
             self._encoded_categorical_features = []
         if self.model_config.normalize:
